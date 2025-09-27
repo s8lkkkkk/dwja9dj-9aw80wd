@@ -1,1 +1,22 @@
-
+<!DOCTYPE html>
+<html lang="en" class="bg-gray-900 text-gray-100">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>{% block title %}Vercel Tracker{% endblock %}</title>
+<link href="/static/tailwind.css" rel="stylesheet">
+</head>
+<body class="font-sans">
+<div class="min-h-screen flex flex-col">
+  <header class="bg-gray-800 p-4 shadow">
+    <h1 class="text-xl font-bold">Vercel Traffic Dashboard</h1>
+  </header>
+  <main class="flex-1 p-6">
+    {% block content %}{% endblock %}
+  </main>
+  <footer class="bg-gray-800 p-4 text-gray-400 text-sm text-center">
+    &copy; 2025 Your Company
+  </footer>
+</div>
+</body>
+</html>
