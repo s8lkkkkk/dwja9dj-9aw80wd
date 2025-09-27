@@ -1,1 +1,16 @@
-
+{% extends "base.html" %}
+{% block title %}Select Project{% endblock %}
+{% block content %}
+<div class="max-w-md mx-auto bg-gray-800 p-6 rounded-lg shadow-lg">
+<h2 class="text-lg font-semibold mb-4">Select a Project to Track</h2>
+<form method="post" action="/select_project" class="space-y-4">
+  {% for p in projects %}
+    <label class="flex items-center bg-gray-700 p-2 rounded cursor-pointer hover:bg-gray-600">
+      <input type="radio" name="project_id" value="{{p.id}}" class="mr-2">
+      <span>{{p.name}}</span>
+    </label>
+  {% endfor %}
+  <button type="submit" class="bg-blue-600 hover:bg-blue-500 px-4 py-2 rounded font-semibold">Track</button>
+</form>
+</div>
+{% endblock %}
