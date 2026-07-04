@@ -1,15 +1,17 @@
--- Prevent multiple windows
-if getgenv().MSPaintLoaded then return end
-getgenv().MSPaintLoaded = true
+-- Cleanup existing instance to prevent duplicates on manual re-exec
+local CoreGui = game:GetService("CoreGui")
+if CoreGui:FindFirstChild("MSPaint_UI") then
+    CoreGui:FindFirstChild("MSPaint_UI"):Destroy()
+end
 
--- Setup Globals
+-- Initialize Global Flags
+getgenv().MSPaintLoaded = true
 _G.HeadSize = 15
 _G.Disabled = false 
 
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 local HttpService = game:GetService("HttpService")
-local UserInputService = game:GetService("UserInputService")
 local Camera = workspace.CurrentCamera
 local LocalPlayer = Players.LocalPlayer
 
@@ -17,9 +19,10 @@ local Library = loadstring(game:HttpGet("https://raw.githubusercontent.com/deivi
 local Window = Library:CreateWindow({Title = "mspaint", Footer = "Sniper Arena", AutoShow = true, ToggleKeybind = Enum.KeyCode.Zero})
 
 --------------------------------------------------------------------------------
--- HUD & STATUS
+-- HUD & SERVER STATUS
 --------------------------------------------------------------------------------
-local ScreenGui = Instance.new("ScreenGui", game.CoreGui)
+local ScreenGui = Instance.new("ScreenGui", CoreGui)
+ScreenGui.Name = "MSPaint_UI"
 local StatusFrame = Instance.new("Frame", ScreenGui)
 StatusFrame.Size = UDim2.new(0, 180, 0, 100)
 StatusFrame.Position = UDim2.new(0, 10, 0, 10)
@@ -37,6 +40,18 @@ RunService.RenderStepped:Connect(function()
     local fps = math.floor(workspace:GetRealPhysicsFPS())
     StatusText.Text = string.format("FPS: %d\nPing: %dms\nPlayers: %d", fps, ping, #Players:GetPlayers())
 end)
+
+--------------------------------------------------------------------------------
+-- PLAYERS TAB
+--------------------------------------------------------------------------------
+local PlayerTab = Window:AddTab("Players", "people")
+local PlayerGroup = PlayerTab:AddLeftGroupbox("Server List")
+local function Spectate(plr) if plr and plr.Character and plr.Character:FindFirstChild("Humanoid") then Camera.CameraSubject = plr.Character.Humanoid end end
+
+for _, plr in pairs(Players:GetPlayers()) do
+    PlayerGroup:AddButton({Text = "Spectate " .. plr.Name, Func = function() Spectate(plr) end})
+end
+PlayerGroup:AddButton({Text = "Reset Camera", Func = function() Camera.CameraSubject = LocalPlayer.Character.Humanoid end})
 
 --------------------------------------------------------------------------------
 -- ESP TAB
@@ -88,32 +103,7 @@ RunService.RenderStepped:Connect(function()
 end)
 
 --------------------------------------------------------------------------------
--- SOCIALS TAB
---------------------------------------------------------------------------------
-local SocialTab = Window:AddTab("Socials", "heart")
-local SocialGroup = SocialTab:AddLeftGroupbox("Copy Links")
-local IconGroup = SocialTab:AddRightGroupbox("Logos")
-
-local function CopyToClipboard(link, name)
-    setclipboard(link)
-    Library:Notify("Copied " .. name .. " link to clipboard!", 3)
-end
-
-SocialGroup:AddButton({Text = "Copy Discord", Func = function() CopyToClipboard("https://discord.gg/saXzuhsFbj", "Discord") end})
-SocialGroup:AddButton({Text = "Copy TikTok", Func = function() CopyToClipboard("https://www.tiktok.com/@1l1l11111l1", "TikTok") end})
-
-local DiscordImg = Instance.new("ImageLabel", IconGroup.Groupbox)
-DiscordImg.Size = UDim2.new(0, 100, 0, 100)
-DiscordImg.Image = "https://raw.githubusercontent.com/s8lkkkkk/dwja9dj-9aw80wd/refs/heads/main/Screenshot%202026-07-04%20222940-Photoroom.png"
-DiscordImg.BackgroundTransparency = 1
-
-local TikTokImg = Instance.new("ImageLabel", IconGroup.Groupbox)
-TikTokImg.Size = UDim2.new(0, 100, 0, 100)
-TikTokImg.Image = "https://raw.githubusercontent.com/s8lkkkkk/dwja9dj-9aw80wd/refs/heads/main/Screenshot%202026-07-04%20222929-Photoroom.png"
-TikTokImg.BackgroundTransparency = 1
-
---------------------------------------------------------------------------------
--- CONFIG TAB
+-- CONFIG & TELEPORT
 --------------------------------------------------------------------------------
 local ConfigFile = "mspaint_" .. LocalPlayer.Name .. ".json"
 local function SaveConfig() if writefile then local d={Toggles={},Options={}} for n,v in pairs(Library.Toggles) do d.Toggles[n]=v.Value end for n,v in pairs(Library.Options) do if typeof(v.Value)=="Color3" then d.Options[n]={v.Value.R,v.Value.G,v.Value.B} else d.Options[n]=v.Value end end writefile(ConfigFile, HttpService:JSONEncode(d)) end end
@@ -123,4 +113,10 @@ local ConfigTab = Window:AddTab("Config", "file-text")
 ConfigTab:AddLeftGroupbox("Management"):AddButton({Text="Save Settings", Func=SaveConfig})
 ConfigTab:AddLeftGroupbox("Management"):AddButton({Text="Load Settings", Func=LoadConfig})
 
+local q = queue_on_teleport or queueonteleport or (syn and syn.queue_on_teleport)
+if q then q([[
+    repeat task.wait() until game:IsLoaded()
+    loadstring(game:HttpGet("https://raw.githubusercontent.com/s8lkkkkk/dwja9dj-9aw80wd/refs/heads/main/sniper.lua"))()
+]]) end
+LocalPlayer.OnTeleport:Connect(SaveConfig)
 task.delay(1, LoadConfig)
