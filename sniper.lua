@@ -63,17 +63,18 @@ Players.PlayerAdded:Connect(onPlayerAdded)
 Players.PlayerRemoving:Connect(giveSlot)
 
 local espEnabled = false
-local renderConn
-
-renderConn = RunService.RenderStepped:Connect(function()
+RunService.RenderStepped:Connect(function()
     if not espEnabled then
         for i = 1, #AllLines do AllLines[i].Visible = false end
         return
     end
 
     local T, O = Library.Toggles, Library.Options
-    local boxColor = O.ESP_BoxColor and O.ESP_BoxColor.Value or Color3.fromRGB(255, 255, 255)
-    local thickness = O.ESP_Thickness and O.ESP_Thickness.Value or 1
+    local boxColor = O.ESP_BoxColor.Value
+    local tracerColor = O.ESP_TracerColor.Value
+    local thickness = O.ESP_Thickness.Value
+    local cornerBox = T.ESP_CornerBox.Value
+    local tracers = T.ESP_Tracers.Value
 
     for i = 1, #AllLines do AllLines[i].Visible = false end
 
@@ -89,32 +90,39 @@ renderConn = RunService.RenderStepped:Connect(function()
                 local l, r, t, b = x - width / 2, x + width / 2, y - height / 2, y + height / 2
                 local o = (slot - 1) * LINES_PER_PLAYER
                 
-                local lines = {{l,t,r,t}, {r,t,r,b}, {r,b,l,b}, {l,b,l,t}}
-                for i=1, 4 do AllLines[o+i].Color = Color3.new(0,0,0); AllLines[o+i].Thickness = thickness+2; AllLines[o+i].From = Vector2.new(lines[i][1], lines[i][2]); AllLines[o+i].To = Vector2.new(lines[i][3], lines[i][4]); AllLines[o+i].Visible = true end
-                for i=1, 4 do AllLines[o+4+i].Color = boxColor; AllLines[o+4+i].Thickness = thickness; AllLines[o+4+i].From = Vector2.new(lines[i][1], lines[i][2]); AllLines[o+4+i].To = Vector2.new(lines[i][3], lines[i][4]); AllLines[o+4+i].Visible = true end
+                if cornerBox then
+                    local cw, ch = width * 0.25, height * 0.25
+                    local lines = {{l,t,l+cw,t}, {l,t,l,t+ch}, {r,t,r-cw,t}, {r,t,r,t+ch}, {r,b,r-cw,b}, {r,b,r,b-ch}, {l,b,l+cw,b}, {l,b,l,b-ch}}
+                    for i=1, 8 do AllLines[o+i].Color = Color3.new(0,0,0); AllLines[o+i].Thickness = thickness+2; AllLines[o+i].From = Vector2.new(lines[i][1], lines[i][2]); AllLines[o+i].To = Vector2.new(lines[i][3], lines[i][4]); AllLines[o+i].Visible = true end
+                    for i=1, 8 do AllLines[o+8+i].Color = boxColor; AllLines[o+8+i].Thickness = thickness; AllLines[o+8+i].From = Vector2.new(lines[i][1], lines[i][2]); AllLines[o+8+i].To = Vector2.new(lines[i][3], lines[i][4]); AllLines[o+8+i].Visible = true end
+                else
+                    local lines = {{l,t,r,t}, {r,t,r,b}, {r,b,l,b}, {l,b,l,t}}
+                    for i=1, 4 do AllLines[o+i].Color = Color3.new(0,0,0); AllLines[o+i].Thickness = thickness+2; AllLines[o+i].From = Vector2.new(lines[i][1], lines[i][2]); AllLines[o+i].To = Vector2.new(lines[i][3], lines[i][4]); AllLines[o+i].Visible = true end
+                    for i=1, 4 do AllLines[o+4+i].Color = boxColor; AllLines[o+4+i].Thickness = thickness; AllLines[o+4+i].From = Vector2.new(lines[i][1], lines[i][2]); AllLines[o+4+i].To = Vector2.new(lines[i][3], lines[i][4]); AllLines[o+4+i].Visible = true end
+                end
+                if tracers then
+                    AllLines[o+17].Color = tracerColor; AllLines[o+17].Thickness = thickness; AllLines[o+17].From = Vector2.new(Camera.ViewportSize.X/2, Camera.ViewportSize.Y); AllLines[o+17].To = Vector2.new(x, y+height/2); AllLines[o+17].Visible = true
+                end
             end
         end
     end
 end)
 
 MainGroup:AddToggle("ESP_Enabled", { Text = "Bounding Box ESP", Default = false, Callback = function(v) espEnabled = v end })
+MainGroup:AddToggle("ESP_CornerBox", { Text = "Corner Box", Default = false })
+MainGroup:AddToggle("ESP_Tracers", { Text = "Tracers", Default = false })
 local ESPOptions = ESPTab:AddRightGroupbox("Options")
 ESPOptions:AddSlider("ESP_Thickness", { Text = "Outline Thickness", Default = 1, Min = 1, Max = 6 })
 ESPOptions:AddLabel("Box Color"):AddColorPicker("ESP_BoxColor", { Default = Color3.fromRGB(255, 255, 255) })
+ESPOptions:AddLabel("Tracer Color"):AddColorPicker("ESP_TracerColor", { Default = Color3.fromRGB(255, 0, 0) })
 
 --------------------------------------------------------------------------------
--- COMBAT TAB
+-- COMBAT & CONFIG
 --------------------------------------------------------------------------------
 local CombatTab = Window:AddTab("Combat", "swords")
-local AimbotGroup = CombatTab:AddLeftGroupbox("Aimbot")
 local HitboxGroup = CombatTab:AddLeftGroupbox("Hitbox Expander")
-
-local aimbotEnabled = false
-AimbotGroup:AddToggle("Aimbot_Enabled", { Text = "Enable Aimbot", Default = false, Callback = function(v) aimbotEnabled = v end })
-
-local hitboxEnabled = false local hitboxSize = 15
-local function resetHitboxes() for _, p in pairs(Players:GetPlayers()) do if p.Character and p.Character:FindFirstChild("HumanoidRootPart") then p.Character.HumanoidRootPart.Size = Vector3.new(2, 2, 1) end end end
-HitboxGroup:AddToggle("Hitbox_Enabled", { Text = "Enable Hitboxes", Default = false, Callback = function(v) hitboxEnabled = v if not v then resetHitboxes() end end })
+local hitboxEnabled, hitboxSize = false, 15
+HitboxGroup:AddToggle("Hitbox_Enabled", { Text = "Enable Hitboxes", Default = false, Callback = function(v) hitboxEnabled = v end })
 HitboxGroup:AddSlider("Hitbox_Size", { Text = "Hitbox Size", Default = 15, Min = 2, Max = 50, Callback = function(v) hitboxSize = v end })
 
 RunService.RenderStepped:Connect(function()
@@ -129,25 +137,11 @@ RunService.RenderStepped:Connect(function()
     end
 end)
 
---------------------------------------------------------------------------------
--- CONFIG & TELEPORT
---------------------------------------------------------------------------------
+local ConfigTab = Window:AddTab("Config", "file-text")
 local ConfigFile = "mspaint_" .. LocalPlayer.Name .. ".json"
 local function SaveConfig() if writefile then local d = {Toggles={}, Options={}} for n,v in pairs(Library.Toggles) do d.Toggles[n]=v.Value end for n,v in pairs(Library.Options) do d.Options[n]=v.Value end writefile(ConfigFile, HttpService:JSONEncode(d)) end end
-local function LoadConfig() if readfile and isfile(ConfigFile) then local d = HttpService:JSONDecode(readfile(ConfigFile)) if d.Toggles then for n,v in pairs(d.Toggles) do if Library.Toggles[n] then Library.Toggles[n]:SetValue(v) end end end end end
-
-local ConfigTab = Window:AddTab("Config", "file-text")
 ConfigTab:AddLeftGroupbox("Management"):AddButton({Text="Save Settings", Func=SaveConfig})
-ConfigTab:AddLeftGroupbox("Management"):AddButton({Text="Load Settings", Func=LoadConfig})
 
 local queue_func = queue_on_teleport or queueonteleport or (syn and syn.queue_on_teleport)
-if queue_func then
-    queue_func([[
-        if not getgenv().MSPaintLoaded then
-            loadstring(game:HttpGet("https://raw.githubusercontent.com/s8lkkkkk/dwja9dj-9aw80wd/refs/heads/main/sniper.lua"))()
-        end
-    ]])
-end
-
+if queue_func then queue_func([[loadstring(game:HttpGet("https://raw.githubusercontent.com/s8lkkkkk/dwja9dj-9aw80wd/refs/heads/main/sniper.lua"))()]]) end
 LocalPlayer.OnTeleport:Connect(SaveConfig)
-task.delay(1, LoadConfig)
