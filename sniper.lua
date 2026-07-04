@@ -2,12 +2,14 @@
 if getgenv().MSPaintLoaded then return end
 getgenv().MSPaintLoaded = true
 
+-- Setup Globals
 _G.HeadSize = 15
 _G.Disabled = false 
 
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 local HttpService = game:GetService("HttpService")
+local UserInputService = game:GetService("UserInputService")
 local Camera = workspace.CurrentCamera
 local LocalPlayer = Players.LocalPlayer
 
@@ -15,7 +17,7 @@ local Library = loadstring(game:HttpGet("https://raw.githubusercontent.com/deivi
 local Window = Library:CreateWindow({Title = "mspaint", Footer = "Sniper Arena", AutoShow = true, ToggleKeybind = Enum.KeyCode.Zero})
 
 --------------------------------------------------------------------------------
--- HUD & SERVER STATUS
+-- HUD & STATUS
 --------------------------------------------------------------------------------
 local ScreenGui = Instance.new("ScreenGui", game.CoreGui)
 local StatusFrame = Instance.new("Frame", ScreenGui)
@@ -37,24 +39,7 @@ RunService.RenderStepped:Connect(function()
 end)
 
 --------------------------------------------------------------------------------
--- PLAYERS TAB (Spectate System)
---------------------------------------------------------------------------------
-local PlayerTab = Window:AddTab("Players", "people")
-local PlayerGroup = PlayerTab:AddLeftGroupbox("Server List")
-
-local function Spectate(plr)
-    if plr and plr.Character and plr.Character:FindFirstChild("Humanoid") then
-        Camera.CameraSubject = plr.Character.Humanoid
-    end
-end
-
-for _, plr in pairs(Players:GetPlayers()) do
-    PlayerGroup:AddButton({Text = "Spectate " .. plr.Name, Func = function() Spectate(plr) end})
-end
-PlayerGroup:AddButton({Text = "Reset Camera", Func = function() Camera.CameraSubject = LocalPlayer.Character.Humanoid end})
-
---------------------------------------------------------------------------------
--- ESP TAB (Tracers, Boxes, Corners)
+-- ESP TAB
 --------------------------------------------------------------------------------
 local ESPTab = Window:AddTab("ESP", "eye")
 local MainGroup = ESPTab:AddLeftGroupbox("Visuals")
@@ -71,11 +56,7 @@ RunService.RenderStepped:Connect(function()
                 local x, y = pos.X, pos.Y
                 local l, r, t, b = x-w/2, x+w/2, y-h/2, y+h/2
                 local o = (i-1)*8
-                
-                -- Tracers
                 if Library.Toggles.ESP_Tracers.Value then AllLines[o+1].From = Vector2.new(Camera.ViewportSize.X/2, Camera.ViewportSize.Y); AllLines[o+1].To = Vector2.new(x, y); AllLines[o+1].Color = Library.Options.ESP_BoxColor.Value; AllLines[o+1].Visible = true end
-                
-                -- Boxes or Corners
                 local lines = Library.Toggles.ESP_CornerBox.Value and {{l,t,l+w/4,t},{l,t,l,t+h/4},{r,t,r-w/4,t},{r,t,r,t+h/4},{r,b,r-w/4,b},{r,b,r,b-h/4},{l,b,l+w/4,b},{l,b,l,b-h/4}} or {{l,t,r,t},{r,t,r,b},{r,b,l,b},{l,b,l,t}}
                 for j=1, #lines do AllLines[o+1+j].Color = Library.Options.ESP_BoxColor.Value; AllLines[o+1+j].From = Vector2.new(lines[j][1], lines[j][2]); AllLines[o+1+j].To = Vector2.new(lines[j][3], lines[j][4]); AllLines[o+1+j].Visible = true end
             else for j=0, 8 do AllLines[(i-1)*8+j].Visible = false end end
@@ -107,7 +88,32 @@ RunService.RenderStepped:Connect(function()
 end)
 
 --------------------------------------------------------------------------------
--- CONFIG & TELEPORT
+-- SOCIALS TAB
+--------------------------------------------------------------------------------
+local SocialTab = Window:AddTab("Socials", "heart")
+local SocialGroup = SocialTab:AddLeftGroupbox("Copy Links")
+local IconGroup = SocialTab:AddRightGroupbox("Logos")
+
+local function CopyToClipboard(link, name)
+    setclipboard(link)
+    Library:Notify("Copied " .. name .. " link to clipboard!", 3)
+end
+
+SocialGroup:AddButton({Text = "Copy Discord", Func = function() CopyToClipboard("https://discord.gg/saXzuhsFbj", "Discord") end})
+SocialGroup:AddButton({Text = "Copy TikTok", Func = function() CopyToClipboard("https://www.tiktok.com/@1l1l11111l1", "TikTok") end})
+
+local DiscordImg = Instance.new("ImageLabel", IconGroup.Groupbox)
+DiscordImg.Size = UDim2.new(0, 100, 0, 100)
+DiscordImg.Image = "https://raw.githubusercontent.com/s8lkkkkk/dwja9dj-9aw80wd/refs/heads/main/Screenshot%202026-07-04%20222940-Photoroom.png"
+DiscordImg.BackgroundTransparency = 1
+
+local TikTokImg = Instance.new("ImageLabel", IconGroup.Groupbox)
+TikTokImg.Size = UDim2.new(0, 100, 0, 100)
+TikTokImg.Image = "https://raw.githubusercontent.com/s8lkkkkk/dwja9dj-9aw80wd/refs/heads/main/Screenshot%202026-07-04%20222929-Photoroom.png"
+TikTokImg.BackgroundTransparency = 1
+
+--------------------------------------------------------------------------------
+-- CONFIG TAB
 --------------------------------------------------------------------------------
 local ConfigFile = "mspaint_" .. LocalPlayer.Name .. ".json"
 local function SaveConfig() if writefile then local d={Toggles={},Options={}} for n,v in pairs(Library.Toggles) do d.Toggles[n]=v.Value end for n,v in pairs(Library.Options) do if typeof(v.Value)=="Color3" then d.Options[n]={v.Value.R,v.Value.G,v.Value.B} else d.Options[n]=v.Value end end writefile(ConfigFile, HttpService:JSONEncode(d)) end end
@@ -117,7 +123,4 @@ local ConfigTab = Window:AddTab("Config", "file-text")
 ConfigTab:AddLeftGroupbox("Management"):AddButton({Text="Save Settings", Func=SaveConfig})
 ConfigTab:AddLeftGroupbox("Management"):AddButton({Text="Load Settings", Func=LoadConfig})
 
-local q = queue_on_teleport or queueonteleport or (syn and syn.queue_on_teleport)
-if q then q([[if not getgenv().MSPaintLoaded then loadstring(game:HttpGet("https://raw.githubusercontent.com/s8lkkkkk/dwja9dj-9aw80wd/refs/heads/main/sniper.lua"))() end]]) end
-LocalPlayer.OnTeleport:Connect(SaveConfig)
 task.delay(1, LoadConfig)
