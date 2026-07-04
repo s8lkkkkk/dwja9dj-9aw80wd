@@ -434,18 +434,23 @@ task.spawn(function()
     while task.wait(5) do SaveConfig() end
 end)
 
-local queue_func = queue_on_teleport or (syn and syn.queue_on_teleport) or (fluxus and fluxus.queue_on_teleport)
+-- GET QUEUE FUNCTION (Supports more executors)
+local queue_func = queue_on_teleport or queueonteleport or (syn and syn.queue_on_teleport) or (fluxus and fluxus.queue_on_teleport)
+
+-- QUEUE IMMEDIATELY (Don't wait for the teleport event)
+if queue_func then
+    local scriptUrl = "https://raw.githubusercontent.com/s8lkkkkk/dwja9dj-9aw80wd/refs/heads/main/sniper.lua"
+    queue_func(string.format([[
+        if not game:IsLoaded() then game.Loaded:Wait() end
+        task.wait(1)
+        pcall(function() loadstring(game:HttpGet("%s"))() end)
+    ]], scriptUrl))
+end
+
+-- Save config right before leaving
 LocalPlayer.OnTeleport:Connect(function(State)
     if State == Enum.TeleportState.Started then
         SaveConfig() 
-        if queue_func then
-            local scriptUrl = "https://raw.githubusercontent.com/s8lkkkkk/dwja9dj-9aw80wd/refs/heads/main/sniper.lua"
-            queue_func(string.format([[
-                if not game:IsLoaded() then game.Loaded:Wait() end
-                task.wait(1)
-                pcall(function() loadstring(game:HttpGet("%s"))() end)
-            ]], scriptUrl))
-        end
     end
 end)
 
