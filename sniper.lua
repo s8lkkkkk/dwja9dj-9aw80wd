@@ -2,9 +2,9 @@
 if getgenv().MSPaintLoaded then return end
 getgenv().MSPaintLoaded = true
 
--- Setup Globals for the specific hitbox logic you requested
+-- Setup Globals for Turboguru logic
 _G.HeadSize = 15
-_G.Disabled = false -- Start as disabled (false) so it doesn't run immediately
+_G.Disabled = false 
 
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
@@ -18,7 +18,7 @@ local Window = Library:CreateWindow({
 })
 
 --------------------------------------------------------------------------------
--- ESP TAB
+-- ESP TAB (Full Logic)
 --------------------------------------------------------------------------------
 local ESPTab = Window:AddTab("ESP", "eye")
 local MainGroup = ESPTab:AddLeftGroupbox("Visuals")
@@ -46,6 +46,7 @@ Players.PlayerAdded:Connect(onPlayerAdded) Players.PlayerRemoving:Connect(giveSl
 RunService.RenderStepped:Connect(function()
     if not Library.Toggles.ESP_Enabled.Value then for i=1, #AllLines do AllLines[i].Visible = false end return end
     local boxColor = Library.Options.ESP_BoxColor.Value
+    local tracerColor = Library.Options.ESP_TracerColor.Value
     local thickness = Library.Options.ESP_Thickness.Value
     
     for i=1, #AllLines do AllLines[i].Visible = false end
@@ -61,30 +62,40 @@ RunService.RenderStepped:Connect(function()
                 local l, r, t, b = x-w/2, x+w/2, y-h/2, y+h/2
                 local o = (slot-1)*LINES_PER_PLAYER
                 
-                local lines = {{l,t,r,t}, {r,t,r,b}, {r,b,l,b}, {l,b,l,t}}
-                for i=1, 4 do AllLines[o+i].Color = Color3.new(0,0,0); AllLines[o+i].Thickness = thickness+2; AllLines[o+i].From = Vector2.new(lines[i][1], lines[i][2]); AllLines[o+i].To = Vector2.new(lines[i][3], lines[i][4]); AllLines[o+i].Visible = true end
-                for i=1, 4 do AllLines[o+4+i].Color = boxColor; AllLines[o+4+i].Thickness = thickness; AllLines[o+4+i].From = Vector2.new(lines[i][1], lines[i][2]); AllLines[o+4+i].To = Vector2.new(lines[i][3], lines[i][4]); AllLines[o+4+i].Visible = true end
+                if Library.Toggles.ESP_CornerBox.Value then
+                    local cw, ch = w*0.25, h*0.25
+                    local lines = {{l,t,l+cw,t}, {l,t,l,t+ch}, {r,t,r-cw,t}, {r,t,r,t+ch}, {r,b,r-cw,b}, {r,b,r,b-ch}, {l,b,l+cw,b}, {l,b,l,b-ch}}
+                    for i=1, 8 do AllLines[o+i].Color = Color3.new(0,0,0); AllLines[o+i].Thickness = thickness+2; AllLines[o+i].From = Vector2.new(lines[i][1], lines[i][2]); AllLines[o+i].To = Vector2.new(lines[i][3], lines[i][4]); AllLines[o+i].Visible = true end
+                    for i=1, 8 do AllLines[o+8+i].Color = boxColor; AllLines[o+8+i].Thickness = thickness; AllLines[o+8+i].From = Vector2.new(lines[i][1], lines[i][2]); AllLines[o+8+i].To = Vector2.new(lines[i][3], lines[i][4]); AllLines[o+8+i].Visible = true end
+                else
+                    local lines = {{l,t,r,t}, {r,t,r,b}, {r,b,l,b}, {l,b,l,t}}
+                    for i=1, 4 do AllLines[o+i].Color = Color3.new(0,0,0); AllLines[o+i].Thickness = thickness+2; AllLines[o+i].From = Vector2.new(lines[i][1], lines[i][2]); AllLines[o+i].To = Vector2.new(lines[i][3], lines[i][4]); AllLines[o+i].Visible = true end
+                    for i=1, 4 do AllLines[o+4+i].Color = boxColor; AllLines[o+4+i].Thickness = thickness; AllLines[o+4+i].From = Vector2.new(lines[i][1], lines[i][2]); AllLines[o+4+i].To = Vector2.new(lines[i][3], lines[i][4]); AllLines[o+4+i].Visible = true end
+                end
+                if Library.Toggles.ESP_Tracers.Value then AllLines[o+17].Color = tracerColor; AllLines[o+17].Thickness = thickness; AllLines[o+17].From = Vector2.new(Camera.ViewportSize.X/2, Camera.ViewportSize.Y); AllLines[o+17].To = Vector2.new(x, y+h/2); AllLines[o+17].Visible = true end
             end
         end
     end
 end)
 
 MainGroup:AddToggle("ESP_Enabled", {Text="Bounding Box ESP", Default=false})
+MainGroup:AddToggle("ESP_CornerBox", {Text="Corner Box", Default=false})
+MainGroup:AddToggle("ESP_Tracers", {Text="Tracers", Default=false})
 local ESPOptions = ESPTab:AddRightGroupbox("Options")
 ESPOptions:AddSlider("ESP_Thickness", {Text="Outline Thickness", Default=1, Min=1, Max=6})
 ESPOptions:AddLabel("Box Color"):AddColorPicker("ESP_BoxColor", {Default=Color3.fromRGB(255, 255, 255)})
+ESPOptions:AddLabel("Tracer Color"):AddColorPicker("ESP_TracerColor", {Default=Color3.fromRGB(255, 0, 0)})
 
 --------------------------------------------------------------------------------
--- COMBAT TAB (Using Turboguru Logic)
+-- COMBAT TAB
 --------------------------------------------------------------------------------
 local CombatTab = Window:AddTab("Combat", "swords")
 local HitboxGroup = CombatTab:AddLeftGroupbox("Hitbox Expander")
-
 HitboxGroup:AddToggle("Hitbox_Enabled", {Text="Enable Hitboxes", Default=false, Callback = function(v) _G.Disabled = v end})
 HitboxGroup:AddSlider("Hitbox_Size", {Text="Hitbox Size", Default=15, Min=2, Max=50, Callback = function(v) _G.HeadSize = v end})
 
 RunService.RenderStepped:Connect(function()
-    if _G.Disabled then -- If Toggled ON
+    if _G.Disabled then
         for _, v in next, Players:GetPlayers() do
             if v.Name ~= LocalPlayer.Name and v.Character and v.Character:FindFirstChild("HumanoidRootPart") then
                 pcall(function()
@@ -101,8 +112,24 @@ end)
 -- CONFIG & TELEPORT
 --------------------------------------------------------------------------------
 local ConfigFile = "mspaint_" .. LocalPlayer.Name .. ".json"
-local function SaveConfig() if writefile then local d = {Toggles={}, Options={}} for n,v in pairs(Library.Toggles) do d.Toggles[n]=v.Value end for n,v in pairs(Library.Options) do d.Options[n]=v.Value end writefile(ConfigFile, HttpService:JSONEncode(d)) end end
-local function LoadConfig() if readfile and isfile(ConfigFile) then local d = HttpService:JSONDecode(readfile(ConfigFile)) if d.Toggles then for n,v in pairs(d.Toggles) do if Library.Toggles[n] then Library.Toggles[n]:SetValue(v) end end end end end
+local function SaveConfig() 
+    if not writefile then return end
+    local d = {Toggles={}, Options={}} 
+    for n,v in pairs(Library.Toggles) do d.Toggles[n]=v.Value end 
+    for n,v in pairs(Library.Options) do 
+        if typeof(v.Value) == "Color3" then d.Options[n]={v.Value.R, v.Value.G, v.Value.B} else d.Options[n]=v.Value end
+    end 
+    writefile(ConfigFile, HttpService:JSONEncode(d)) 
+end
+
+local function LoadConfig() 
+    if not (readfile and isfile and isfile(ConfigFile)) then return end 
+    local d = HttpService:JSONDecode(readfile(ConfigFile)) 
+    if d.Toggles then for n,v in pairs(d.Toggles) do if Library.Toggles[n] then Library.Toggles[n]:SetValue(v) end end end
+    if d.Options then for n,v in pairs(d.Options) do if Library.Options[n] then 
+        if type(v) == "table" then Library.Options[n]:SetValueRGB(Color3.new(v[1], v[2], v[3])) else Library.Options[n]:SetValue(v) end 
+    end end end
+end
 
 local ConfigTab = Window:AddTab("Config", "file-text")
 ConfigTab:AddLeftGroupbox("Management"):AddButton({Text="Save Settings", Func=SaveConfig})
