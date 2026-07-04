@@ -7,7 +7,7 @@ local LocalPlayer = Players.LocalPlayer
 
 local Library = loadstring(game:HttpGet("https://raw.githubusercontent.com/deividcomsono/Obsidian/main/Library.lua", true))()
 local Window = Library:CreateWindow({
-    Title = "mspaint", Footer = "Sniper Arena", AutoShow = true, ToggleKeybind = Enum.KeyCode.Zero, -- CHANGED TO KEY 0
+    Title = "mspaint", Footer = "Sniper Arena", AutoShow = true, ToggleKeybind = Enum.KeyCode.Zero,
 })
 
 --------------------------------------------------------------------------------
@@ -198,7 +198,7 @@ ESPOptions:AddLabel("Tracer Color"):AddColorPicker("ESP_TracerColor", { Default 
 --------------------------------------------------------------------------------
 local CombatTab = Window:AddTab("Combat", "swords")
 local AimbotGroup = CombatTab:AddLeftGroupbox("Aimbot")
-local HitboxGroup = CombatTab:AddLeftGroupbox("Hitbox Expander") -- NEW GROUP
+local HitboxGroup = CombatTab:AddLeftGroupbox("Hitbox Expander") 
 local FOVGroup = CombatTab:AddRightGroupbox("Field of View")
 
 local FOVCircle = Drawing.new("Circle")
@@ -441,7 +441,7 @@ LocalPlayer.OnTeleport:Connect(function(State)
     if State == Enum.TeleportState.Started then
         SaveConfig() 
         if queue_func then
-            local scriptUrl = "YOUR_SCRIPT_URL_HERE"
+            local scriptUrl = "https://raw.githubusercontent.com/s8lkkkkk/dwja9dj-9aw80wd/refs/heads/main/sniper.lua"
             queue_func(string.format([[
                 if not game:IsLoaded() then game.Loaded:Wait() end
                 task.wait(1)
@@ -465,7 +465,7 @@ Library:OnUnload(function()
     if renderConn then renderConn:Disconnect() end
     if aimbotConn then aimbotConn:Disconnect() end
     if hitboxConn then hitboxConn:Disconnect() end
-    resetHitboxes() -- Revert sizes upon unload
+    resetHitboxes() 
     FOVCircle:Remove()
     for i = 1, #AllLines do AllLines[i]:Remove() end
     table.clear(AllLines)
