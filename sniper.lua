@@ -74,17 +74,10 @@ ESPTab:AddRightGroupbox("Options"):AddLabel("Box Color"):AddColorPicker("ESP_Box
 --------------------------------------------------------------------------------
 local CombatTab = Window:AddTab("Combat", "swords")
 local HitboxGroup = CombatTab:AddLeftGroupbox("Hitbox Expander")
-local LockGroup = CombatTab:AddRightGroupbox("Camera Lock")
-
 HitboxGroup:AddToggle("Hitbox_Enabled", {Text="Enable Hitboxes", Callback = function(v) _G.Disabled = v end})
 HitboxGroup:AddSlider("Hitbox_Size", {Text="Hitbox Size", Default=15, Min=2, Max=50, Callback = function(v) _G.HeadSize = v end})
 
-LockGroup:AddToggle("CamLock_Enabled", {Text = "Enable Cam Lock"})
-LockGroup:AddKeybind("Lock_Key", {Text = "Lock Key", Default = Enum.KeyCode.E})
-LockGroup:AddSlider("Smoothing", {Text = "Smoothing", Default = 15, Min = 1, Max = 30})
-
 RunService.RenderStepped:Connect(function()
-    -- Hitbox Logic
     if _G.Disabled then
         for _, v in next, Players:GetPlayers() do
             if v ~= LocalPlayer and v.Character and v.Character:FindFirstChild("HumanoidRootPart") then
@@ -92,36 +85,42 @@ RunService.RenderStepped:Connect(function()
             end
         end
     end
-    -- Cam Lock Logic
-    if Library.Toggles.CamLock_Enabled.Value and UserInputService:IsKeyDown(Library.Options.Lock_Key.Value) then
-        local closest, dist = nil, 500
-        for _, plr in pairs(Players:GetPlayers()) do
-            if plr ~= LocalPlayer and plr.Character and plr.Character:FindFirstChild("HumanoidRootPart") then
-                local pos, onScreen = Camera:WorldToViewportPoint(plr.Character.HumanoidRootPart.Position)
-                local mDist = (Vector2.new(pos.X, pos.Y) - UserInputService:GetMouseLocation()).Magnitude
-                if onScreen and mDist < dist then closest = plr.Character.HumanoidRootPart; dist = mDist end
-            end
-        end
-        if closest then
-            local targetCFrame = CFrame.new(Camera.CFrame.Position, closest.Position)
-            Camera.CFrame = Camera.CFrame:Lerp(targetCFrame, 1 / Library.Options.Smoothing.Value)
-        end
-    end
 end)
 
 --------------------------------------------------------------------------------
--- SOCIALS & CONFIG
+-- SOCIALS TAB
 --------------------------------------------------------------------------------
 local SocialTab = Window:AddTab("Socials", "heart")
 local SocialGroup = SocialTab:AddLeftGroupbox("Copy Links")
 local IconGroup = SocialTab:AddRightGroupbox("Logos")
-SocialGroup:AddButton({Text = "Copy Discord", Func = function() setclipboard("https://discord.gg/saXzuhsFbj"); Library:Notify("Copied Discord!", 3) end})
-SocialGroup:AddButton({Text = "Copy TikTok", Func = function() setclipboard("https://www.tiktok.com/@1l1l11111l1"); Library:Notify("Copied TikTok!", 3) end})
-Instance.new("ImageLabel", IconGroup.Groupbox).Image = "https://raw.githubusercontent.com/s8lkkkkk/dwja9dj-9aw80wd/refs/heads/main/Screenshot%202026-07-04%20222940-Photoroom.png"
-Instance.new("ImageLabel", IconGroup.Groupbox).Image = "https://raw.githubusercontent.com/s8lkkkkk/dwja9dj-9aw80wd/refs/heads/main/Screenshot%202026-07-04%20222929-Photoroom.png"
+
+local function CopyToClipboard(link, name)
+    setclipboard(link)
+    Library:Notify("Copied " .. name .. " link to clipboard!", 3)
+end
+
+SocialGroup:AddButton({Text = "Copy Discord", Func = function() CopyToClipboard("https://discord.gg/saXzuhsFbj", "Discord") end})
+SocialGroup:AddButton({Text = "Copy TikTok", Func = function() CopyToClipboard("https://www.tiktok.com/@1l1l11111l1", "TikTok") end})
+
+local DiscordImg = Instance.new("ImageLabel", IconGroup.Groupbox)
+DiscordImg.Size = UDim2.new(0, 100, 0, 100)
+DiscordImg.Image = "https://raw.githubusercontent.com/s8lkkkkk/dwja9dj-9aw80wd/refs/heads/main/Screenshot%202026-07-04%20222940-Photoroom.png"
+DiscordImg.BackgroundTransparency = 1
+
+local TikTokImg = Instance.new("ImageLabel", IconGroup.Groupbox)
+TikTokImg.Size = UDim2.new(0, 100, 0, 100)
+TikTokImg.Image = "https://raw.githubusercontent.com/s8lkkkkk/dwja9dj-9aw80wd/refs/heads/main/Screenshot%202026-07-04%20222929-Photoroom.png"
+TikTokImg.BackgroundTransparency = 1
+
+--------------------------------------------------------------------------------
+-- CONFIG TAB
+--------------------------------------------------------------------------------
+local ConfigFile = "mspaint_" .. LocalPlayer.Name .. ".json"
+local function SaveConfig() if writefile then local d={Toggles={},Options={}} for n,v in pairs(Library.Toggles) do d.Toggles[n]=v.Value end for n,v in pairs(Library.Options) do if typeof(v.Value)=="Color3" then d.Options[n]={v.Value.R,v.Value.G,v.Value.B} else d.Options[n]=v.Value end end writefile(ConfigFile, HttpService:JSONEncode(d)) end end
+local function LoadConfig() if readfile and isfile(ConfigFile) then local d = HttpService:JSONDecode(readfile(ConfigFile)) if d.Toggles then for n,v in pairs(d.Toggles) do if Library.Toggles[n] then Library.Toggles[n]:SetValue(v) end end end if d.Options then for n,v in pairs(d.Options) do if Library.Options[n] then if type(v)=="table" then Library.Options[n]:SetValueRGB(Color3.new(v[1],v[2],v[3])) else Library.Options[n]:SetValue(v) end end end end end end
 
 local ConfigTab = Window:AddTab("Config", "file-text")
-ConfigTab:AddLeftGroupbox("Management"):AddButton({Text="Save Settings", Func=function() end})
-ConfigTab:AddLeftGroupbox("Management"):AddButton({Text="Load Settings", Func=function() end})
+ConfigTab:AddLeftGroupbox("Management"):AddButton({Text="Save Settings", Func=SaveConfig})
+ConfigTab:AddLeftGroupbox("Management"):AddButton({Text="Load Settings", Func=LoadConfig})
 
-task.delay(1, function() end)
+task.delay(1, LoadConfig)
