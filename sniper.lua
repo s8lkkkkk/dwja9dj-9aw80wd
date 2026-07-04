@@ -1,8 +1,8 @@
--- Prevent multiple windows
+-- mspaint / Sniper Arena - Final Build
 if getgenv().MSPaintLoaded then return end
 getgenv().MSPaintLoaded = true
 
--- Setup Services
+-- Services
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 local HttpService = game:GetService("HttpService")
@@ -10,12 +10,12 @@ local UserInputService = game:GetService("UserInputService")
 local Camera = workspace.CurrentCamera
 local LocalPlayer = Players.LocalPlayer
 
--- Initialize UI Library
+-- Initialize Library
 local Library = loadstring(game:HttpGet("https://raw.githubusercontent.com/deividcomsono/Obsidian/main/Library.lua", true))()
 local Window = Library:CreateWindow({Title = "mspaint", Footer = "Sniper Arena", AutoShow = true, ToggleKeybind = Enum.KeyCode.Zero})
 
 --------------------------------------------------------------------------------
--- ESP TAB
+-- ESP TAB: Boxes, Tracers, Colors, Team Check
 --------------------------------------------------------------------------------
 local ESPTab = Window:AddTab("ESP", "eye")
 local MainGroup = ESPTab:AddLeftGroupbox("Visuals")
@@ -50,16 +50,16 @@ RunService.RenderStepped:Connect(function()
 end)
 
 --------------------------------------------------------------------------------
--- COMBAT TAB
+-- COMBAT TAB: Cam Lock, Smoothing, Prediction
 --------------------------------------------------------------------------------
 local CombatTab = Window:AddTab("Combat", "swords")
 local LockGroup = CombatTab:AddLeftGroupbox("Camera Lock")
-local MiscGroup = CombatTab:AddRightGroupbox("Parameters")
+local ParamGroup = CombatTab:AddRightGroupbox("Parameters")
 
 LockGroup:AddToggle("CamLock_Enabled", {Text = "Enable Cam Lock"})
 LockGroup:AddKeybind("Lock_Key", {Text = "Lock Keybind", Default = Enum.KeyCode.E})
-MiscGroup:AddSlider("Smoothing", {Text = "Smoothing", Default = 15, Min = 1, Max = 30})
-MiscGroup:AddSlider("Prediction", {Text = "Prediction", Default = 0, Min = 0, Max = 10})
+ParamGroup:AddSlider("Smoothing", {Text = "Smoothing", Default = 15, Min = 1, Max = 30})
+ParamGroup:AddSlider("Prediction", {Text = "Prediction", Default = 0, Min = 0, Max = 10})
 
 RunService.RenderStepped:Connect(function()
     if Library.Toggles.CamLock_Enabled.Value and UserInputService:IsKeyDown(Library.Options.Lock_Key.Value) then
@@ -80,7 +80,7 @@ RunService.RenderStepped:Connect(function()
 end)
 
 --------------------------------------------------------------------------------
--- SOCIALS TAB
+-- SOCIALS TAB: Logos & Links
 --------------------------------------------------------------------------------
 local SocialTab = Window:AddTab("Socials", "heart")
 SocialTab:AddLeftGroupbox("Copy Links"):AddButton({Text = "Copy Discord", Func = function() setclipboard("https://discord.gg/saXzuhsFbj"); Library:Notify("Copied Discord!", 3) end})
@@ -92,7 +92,7 @@ AddLogo("https://raw.githubusercontent.com/s8lkkkkk/dwja9dj-9aw80wd/refs/heads/m
 AddLogo("https://raw.githubusercontent.com/s8lkkkkk/dwja9dj-9aw80wd/refs/heads/main/Screenshot%202026-07-04%20222929-Photoroom.png")
 
 --------------------------------------------------------------------------------
--- CONFIG TAB
+-- CONFIG TAB: Save & Load
 --------------------------------------------------------------------------------
 local ConfigTab = Window:AddTab("Config", "file-text")
 local Manage = ConfigTab:AddLeftGroupbox("Management")
