@@ -2,7 +2,7 @@
 if getgenv().MSPaintLoaded then return end
 getgenv().MSPaintLoaded = true
 
--- Setup Globals
+-- Setup Globals for Hitboxes
 _G.HeadSize = 15
 _G.Disabled = false 
 
@@ -117,6 +117,16 @@ local CombatTab = Window:AddTab("Combat", "swords")
 local HitboxGroup = CombatTab:AddLeftGroupbox("Hitbox Expander")
 HitboxGroup:AddToggle("Hitbox_Enabled", {Text="Enable Hitboxes", Callback = function(v) _G.Disabled = v end})
 HitboxGroup:AddSlider("Hitbox_Size", {Text="Hitbox Size", Default=15, Min=2, Max=50, Callback = function(v) _G.HeadSize = v end})
+
+RunService.RenderStepped:Connect(function()
+    if _G.Disabled then
+        for _, v in next, Players:GetPlayers() do
+            if v ~= LocalPlayer and v.Character and v.Character:FindFirstChild("HumanoidRootPart") then
+                pcall(function() v.Character.HumanoidRootPart.Size = Vector3.new(_G.HeadSize, _G.HeadSize, _G.HeadSize) v.Character.HumanoidRootPart.Transparency = 1 v.Character.HumanoidRootPart.CanCollide = false end)
+            end
+        end
+    end
+end)
 
 local oldNamecall; oldNamecall = hookmetamethod(game, "__namecall", function(self, ...)
     local method = getnamecallmethod()
