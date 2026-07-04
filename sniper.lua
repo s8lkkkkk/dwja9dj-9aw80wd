@@ -1,4 +1,4 @@
--- mspaint / Sniper Arena - Final Build
+-- Prevent multiple windows
 if getgenv().MSPaintLoaded then return end
 getgenv().MSPaintLoaded = true
 
@@ -15,9 +15,16 @@ local Library = loadstring(game:HttpGet("https://raw.githubusercontent.com/deivi
 local Window = Library:CreateWindow({Title = "mspaint", Footer = "Sniper Arena", AutoShow = true, ToggleKeybind = Enum.KeyCode.Zero})
 
 --------------------------------------------------------------------------------
--- ESP TAB: Boxes, Tracers, Colors, Team Check
+-- TAB INITIALIZATION (Ensuring these all register correctly)
 --------------------------------------------------------------------------------
 local ESPTab = Window:AddTab("ESP", "eye")
+local CombatTab = Window:AddTab("Combat", "swords")
+local SocialTab = Window:AddTab("Socials", "heart")
+local ConfigTab = Window:AddTab("Config", "file-text")
+
+--------------------------------------------------------------------------------
+-- ESP TAB CONTENT
+--------------------------------------------------------------------------------
 local MainGroup = ESPTab:AddLeftGroupbox("Visuals")
 local OptGroup = ESPTab:AddRightGroupbox("Customization")
 local AllLines = {} for i=1, 128 do AllLines[i] = Drawing.new("Line"); AllLines[i].Visible = false end
@@ -50,9 +57,8 @@ RunService.RenderStepped:Connect(function()
 end)
 
 --------------------------------------------------------------------------------
--- COMBAT TAB: Cam Lock, Smoothing, Prediction
+-- COMBAT TAB CONTENT
 --------------------------------------------------------------------------------
-local CombatTab = Window:AddTab("Combat", "swords")
 local LockGroup = CombatTab:AddLeftGroupbox("Camera Lock")
 local ParamGroup = CombatTab:AddRightGroupbox("Parameters")
 
@@ -80,9 +86,8 @@ RunService.RenderStepped:Connect(function()
 end)
 
 --------------------------------------------------------------------------------
--- SOCIALS TAB: Logos & Links
+-- SOCIALS TAB CONTENT
 --------------------------------------------------------------------------------
-local SocialTab = Window:AddTab("Socials", "heart")
 SocialTab:AddLeftGroupbox("Copy Links"):AddButton({Text = "Copy Discord", Func = function() setclipboard("https://discord.gg/saXzuhsFbj"); Library:Notify("Copied Discord!", 3) end})
 SocialTab:AddLeftGroupbox("Copy Links"):AddButton({Text = "Copy TikTok", Func = function() setclipboard("https://www.tiktok.com/@1l1l11111l1"); Library:Notify("Copied TikTok!", 3) end})
 
@@ -92,9 +97,8 @@ AddLogo("https://raw.githubusercontent.com/s8lkkkkk/dwja9dj-9aw80wd/refs/heads/m
 AddLogo("https://raw.githubusercontent.com/s8lkkkkk/dwja9dj-9aw80wd/refs/heads/main/Screenshot%202026-07-04%20222929-Photoroom.png")
 
 --------------------------------------------------------------------------------
--- CONFIG TAB: Save & Load
+-- CONFIG TAB CONTENT
 --------------------------------------------------------------------------------
-local ConfigTab = Window:AddTab("Config", "file-text")
 local Manage = ConfigTab:AddLeftGroupbox("Management")
 local ConfigFile = "mspaint_" .. LocalPlayer.Name .. ".json"
 
