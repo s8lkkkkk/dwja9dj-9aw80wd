@@ -61,12 +61,12 @@ RunService.RenderStepped:Connect(function()
     
     SilentAimTarget = nil
     if Library.Toggles.SilentAim_Enabled.Value then
-        local shortestDistance = Library.Options.FOV_Radius.Value
+        local shortestDist = Library.Options.FOV_Radius.Value
         for _, plr in pairs(Players:GetPlayers()) do
             if plr ~= LocalPlayer and plr.Character and plr.Character:FindFirstChild("Head") then
                 local pos, onScreen = Camera:WorldToViewportPoint(plr.Character.Head.Position)
                 local dist = (Vector2.new(pos.X, pos.Y) - UserInputService:GetMouseLocation()).Magnitude
-                if onScreen and dist < shortestDistance then SilentAimTarget = plr.Character.Head shortestDistance = dist end
+                if onScreen and dist < shortestDist then SilentAimTarget = plr.Character.Head shortestDist = dist end
             end
         end
     end
@@ -78,38 +78,41 @@ RunService.RenderStepped:Connect(function()
         if plr ~= LocalPlayer and plr.Character and plr.Character:FindFirstChild("HumanoidRootPart") then
             local pos, onScreen = Camera:WorldToViewportPoint(plr.Character.HumanoidRootPart.Position)
             if onScreen then
-                local o = (i-1)*5
+                local scale = Camera:WorldToViewportPoint(plr.Character.HumanoidRootPart.Position + Vector3.new(0, 2.5, 0)).Y - Camera:WorldToViewportPoint(plr.Character.HumanoidRootPart.Position - Vector3.new(0, 2.5, 0)).Y
+                local w, h = scale * 0.6, scale
+                local x, y = pos.X, pos.Y
+                local l, r, t, b = x-w/2, x+w/2, y-h/2, y+h/2
+                local o = (i-1)*12
+                
                 if Library.Toggles.ESP_Tracers.Value then
                     AllLines[o+1].Color = Library.Options.Tracer_Color.Value
                     AllLines[o+1].From = Vector2.new(Camera.ViewportSize.X/2, Camera.ViewportSize.Y)
-                    AllLines[o+1].To = Vector2.new(pos.X, pos.Y)
+                    AllLines[o+1].To = Vector2.new(x, y+h/2)
                     AllLines[o+1].Visible = true
                 end
-                -- Box/Corner logic here...
+                
+                if Library.Toggles.ESP_CornerBox.Value then
+                    local lines = {{l,t,l+w/4,t}, {l,t,l,t+h/4}, {r,t,r-w/4,t}, {r,t,r,t+h/4}, {r,b,r-w/4,b}, {r,b,r,b-h/4}, {l,b,l+w/4,b}, {l,b,l,b-h/4}}
+                    for j=1, 8 do AllLines[o+1+j].Color = Library.Options.ESP_BoxColor.Value; AllLines[o+1+j].From = Vector2.new(lines[j][1], lines[j][2]); AllLines[o+1+j].To = Vector2.new(lines[j][3], lines[j][4]); AllLines[o+1+j].Visible = true end
+                else
+                    local lines = {{l,t,r,t}, {r,t,r,b}, {r,b,l,b}, {l,b,l,t}}
+                    for j=1, 4 do AllLines[o+1+j].Color = Library.Options.ESP_BoxColor.Value; AllLines[o+1+j].From = Vector2.new(lines[j][1], lines[j][2]); AllLines[o+1+j].To = Vector2.new(lines[j][3], lines[j][4]); AllLines[o+1+j].Visible = true end
+                end
             end
         end
     end
 end)
 
-MainGroup:AddToggle("ESP_Enabled", {Text="Enable ESP"})
+MainGroup:AddToggle("ESP_Enabled", {Text="Enable Box ESP"})
+MainGroup:AddToggle("ESP_CornerBox", {Text="Corner Mode"})
 MainGroup:AddToggle("ESP_Tracers", {Text="Enable Tracers"})
-local OptionsGroup = ESPTab:AddRightGroupbox("Options")
+local OptionsGroup = ESPTab:AddRightGroupbox("Visual Options")
 OptionsGroup:AddLabel("Tracer Color"):AddColorPicker("Tracer_Color", {Default = Color3.fromRGB(255, 0, 0)})
 OptionsGroup:AddLabel("Box Color"):AddColorPicker("ESP_BoxColor", {Default = Color3.fromRGB(255, 255, 255)})
 
 --------------------------------------------------------------------------------
--- SILENT AIM HOOKS & COMBAT
+-- COMBAT TAB (Hitbox & Silent Aim Hook)
 --------------------------------------------------------------------------------
-local oldNamecall; oldNamecall = hookmetamethod(game, "__namecall", function(self, ...)
-    local method = getnamecallmethod()
-    local args = {...}
-    if not checkcaller() and Library.Toggles.SilentAim_Enabled.Value and SilentAimTarget and (method == "Raycast" or method == "FindPartOnRay") then
-        args[2] = (SilentAimTarget.Position - args[1]).Unit * 1000
-        return oldNamecall(self, unpack(args))
-    end
-    return oldNamecall(self, ...)
-end)
-
 local CombatTab = Window:AddTab("Combat", "swords")
 local HitboxGroup = CombatTab:AddLeftGroupbox("Hitbox Expander")
 HitboxGroup:AddToggle("Hitbox_Enabled", {Text="Enable Hitboxes", Callback = function(v) _G.Disabled = v end})
@@ -123,6 +126,16 @@ RunService.RenderStepped:Connect(function()
             end
         end
     end
+end)
+
+local oldNamecall; oldNamecall = hookmetamethod(game, "__namecall", function(self, ...)
+    local method = getnamecallmethod()
+    local args = {...}
+    if not checkcaller() and Library.Toggles.SilentAim_Enabled.Value and SilentAimTarget and (method == "Raycast" or method == "FindPartOnRay") then
+        args[2] = (SilentAimTarget.Position - args[1]).Unit * 1000
+        return oldNamecall(self, unpack(args))
+    end
+    return oldNamecall(self, ...)
 end)
 
 --------------------------------------------------------------------------------
