@@ -1,4 +1,4 @@
--- Prevent multiple windows from opening
+-- Singleton Check: Prevents multiple windows
 if getgenv().MSPaintLoaded then return end
 getgenv().MSPaintLoaded = true
 
@@ -50,7 +50,6 @@ local function giveSlot(plr)
 end
 
 local function onCharAdded(plr) giveSlot(plr) takeSlot(plr) end
-
 local function onPlayerAdded(plr)
     if plr == LocalPlayer then return end
     takeSlot(plr)
@@ -117,7 +116,7 @@ ESPOptions:AddLabel("Box Color"):AddColorPicker("ESP_BoxColor", { Default = Colo
 ESPOptions:AddLabel("Tracer Color"):AddColorPicker("ESP_TracerColor", { Default = Color3.fromRGB(255, 0, 0) })
 
 --------------------------------------------------------------------------------
--- COMBAT & CONFIG
+-- COMBAT TAB
 --------------------------------------------------------------------------------
 local CombatTab = Window:AddTab("Combat", "swords")
 local HitboxGroup = CombatTab:AddLeftGroupbox("Hitbox Expander")
@@ -137,6 +136,9 @@ RunService.RenderStepped:Connect(function()
     end
 end)
 
+--------------------------------------------------------------------------------
+-- CONFIG & TELEPORT
+--------------------------------------------------------------------------------
 local ConfigTab = Window:AddTab("Config", "file-text")
 local ConfigFile = "mspaint_" .. LocalPlayer.Name .. ".json"
 local function SaveConfig() if writefile then local d = {Toggles={}, Options={}} for n,v in pairs(Library.Toggles) do d.Toggles[n]=v.Value end for n,v in pairs(Library.Options) do d.Options[n]=v.Value end writefile(ConfigFile, HttpService:JSONEncode(d)) end end
