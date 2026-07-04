@@ -381,7 +381,7 @@ end)
 --------------------------------------------------------------------------------
 -- CONFIGURATION & TELEPORT HANDLER
 --------------------------------------------------------------------------------
-local ConfigFile = "mspaint_teleport_config.json"
+local ConfigFile = "mspaint_config_" .. LocalPlayer.Name .. ".json"
 
 local function SaveConfig()
     if not writefile then return end
