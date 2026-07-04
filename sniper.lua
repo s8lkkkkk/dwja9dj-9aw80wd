@@ -111,22 +111,12 @@ OptionsGroup:AddLabel("Tracer Color"):AddColorPicker("Tracer_Color", {Default = 
 OptionsGroup:AddLabel("Box Color"):AddColorPicker("ESP_BoxColor", {Default = Color3.fromRGB(255, 255, 255)})
 
 --------------------------------------------------------------------------------
--- COMBAT TAB (Hitbox & Silent Aim Hook)
+-- COMBAT TAB
 --------------------------------------------------------------------------------
 local CombatTab = Window:AddTab("Combat", "swords")
 local HitboxGroup = CombatTab:AddLeftGroupbox("Hitbox Expander")
 HitboxGroup:AddToggle("Hitbox_Enabled", {Text="Enable Hitboxes", Callback = function(v) _G.Disabled = v end})
 HitboxGroup:AddSlider("Hitbox_Size", {Text="Hitbox Size", Default=15, Min=2, Max=50, Callback = function(v) _G.HeadSize = v end})
-
-RunService.RenderStepped:Connect(function()
-    if _G.Disabled then
-        for _, v in next, Players:GetPlayers() do
-            if v ~= LocalPlayer and v.Character and v.Character:FindFirstChild("HumanoidRootPart") then
-                pcall(function() v.Character.HumanoidRootPart.Size = Vector3.new(_G.HeadSize, _G.HeadSize, _G.HeadSize) v.Character.HumanoidRootPart.Transparency = 1 v.Character.HumanoidRootPart.CanCollide = false end)
-            end
-        end
-    end
-end)
 
 local oldNamecall; oldNamecall = hookmetamethod(game, "__namecall", function(self, ...)
     local method = getnamecallmethod()
@@ -150,8 +140,11 @@ end
 
 local ConfigTab = Window:AddTab("Config", "file-text")
 local function SaveConfig() if writefile then local d={Toggles={},Options={}} for n,v in pairs(Library.Toggles) do d.Toggles[n]=v.Value end for n,v in pairs(Library.Options) do if typeof(v.Value)=="Color3" then d.Options[n]={v.Value.R,v.Value.G,v.Value.B} else d.Options[n]=v.Value end end writefile("mspaint_"..LocalPlayer.Name..".json", HttpService:JSONEncode(d)) end end
+local function LoadConfig() if readfile and isfile("mspaint_"..LocalPlayer.Name..".json") then local d=HttpService:JSONDecode(readfile("mspaint_"..LocalPlayer.Name..".json")) if d.Toggles then for n,v in pairs(d.Toggles) do if Library.Toggles[n] then Library.Toggles[n]:SetValue(v) end end end if d.Options then for n,v in pairs(d.Options) do if Library.Options[n] then if type(v)=="table" then Library.Options[n]:SetValueRGB(Color3.new(v[1],v[2],v[3])) else Library.Options[n]:SetValue(v) end end end end end end
 ConfigTab:AddLeftGroupbox("Management"):AddButton({Text="Save Settings", Func=SaveConfig})
+ConfigTab:AddLeftGroupbox("Management"):AddButton({Text="Load Settings", Func=LoadConfig})
 
 local q = queue_on_teleport or queueonteleport or (syn and syn.queue_on_teleport)
 if q then q([[if not getgenv().MSPaintLoaded then loadstring(game:HttpGet("https://raw.githubusercontent.com/s8lkkkkk/dwja9dj-9aw80wd/refs/heads/main/sniper.lua"))() end]]) end
 LocalPlayer.OnTeleport:Connect(SaveConfig)
+task.delay(1, LoadConfig)
