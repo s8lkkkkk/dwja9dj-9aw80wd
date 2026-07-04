@@ -2,12 +2,14 @@
 if getgenv().MSPaintLoaded then return end
 getgenv().MSPaintLoaded = true
 
+-- Setup Globals
 _G.HeadSize = 15
 _G.Disabled = false 
 
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 local HttpService = game:GetService("HttpService")
+local UserInputService = game:GetService("UserInputService")
 local Camera = workspace.CurrentCamera
 local LocalPlayer = Players.LocalPlayer
 
@@ -15,11 +17,11 @@ local Library = loadstring(game:HttpGet("https://raw.githubusercontent.com/deivi
 local Window = Library:CreateWindow({Title = "mspaint", Footer = "Sniper Arena", AutoShow = true, ToggleKeybind = Enum.KeyCode.Zero})
 
 --------------------------------------------------------------------------------
--- HUD & SERVER STATUS (Visuals/Info)
+-- HUD & SERVER STATUS
 --------------------------------------------------------------------------------
 local ScreenGui = Instance.new("ScreenGui", game.CoreGui)
 local StatusFrame = Instance.new("Frame", ScreenGui)
-StatusFrame.Size = UDim2.new(0, 180, 0, 100)
+StatusFrame.Size = UDim2.new(0, 180, 0, 80)
 StatusFrame.Position = UDim2.new(0, 10, 0, 10)
 StatusFrame.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
 StatusFrame.BorderSizePixel = 0
@@ -29,59 +31,52 @@ StatusText.Position = UDim2.new(0, 10, 0, 0)
 StatusText.TextColor3 = Color3.fromRGB(255, 255, 255)
 StatusText.BackgroundTransparency = 1
 StatusText.TextXAlignment = Enum.TextXAlignment.Left
-StatusText.Text = "Loading Status..."
 
 RunService.RenderStepped:Connect(function()
-    local ping = math.floor(game:GetService("Stats").Network.ServerStatsItem["Data Ping"]:GetValue())
-    local fps = math.floor(workspace:GetRealPhysicsFPS())
-    StatusText.Text = string.format("FPS: %d\nPing: %dms\nPlayers: %d", fps, ping, #Players:GetPlayers())
+    StatusText.Text = string.format("FPS: %d\nPing: %dms\nPlayers: %d", workspace:GetRealPhysicsFPS(), game:GetService("Stats").Network.ServerStatsItem["Data Ping"]:GetValue(), #Players:GetPlayers())
 end)
 
 --------------------------------------------------------------------------------
--- PLAYERS TAB (Spectate System)
---------------------------------------------------------------------------------
-local PlayerTab = Window:AddTab("Players", "people")
-local PlayerGroup = PlayerTab:AddLeftGroupbox("Server List")
-
-local function Spectate(plr)
-    if plr and plr.Character and plr.Character:FindFirstChild("Humanoid") then
-        Camera.CameraSubject = plr.Character.Humanoid
-    end
-end
-
-local function RefreshList()
-    PlayerGroup:AddDivider()
-    for _, plr in pairs(Players:GetPlayers()) do
-        PlayerGroup:AddButton({Text = "Spectate " .. plr.Name, Func = function() Spectate(plr) end})
-    end
-    PlayerGroup:AddButton({Text = "Reset Camera", Func = function() Camera.CameraSubject = LocalPlayer.Character.Humanoid end})
-end
-RefreshList()
-
---------------------------------------------------------------------------------
--- ESP TAB
+-- ESP, SILENT AIM & FOV
 --------------------------------------------------------------------------------
 local ESPTab = Window:AddTab("ESP", "eye")
 local MainGroup = ESPTab:AddLeftGroupbox("Visuals")
-local AllLines = {} for i=1, 32 do AllLines[i] = Drawing.new("Line"); AllLines[i].Visible = false end
+local SilentGroup = ESPTab:AddRightGroupbox("Combat Assist")
+
+local AllLines = {} for i=1, 128 do AllLines[i] = Drawing.new("Line"); AllLines[i].Visible = false end
+local FOVCircle = Drawing.new("Circle") FOVCircle.Thickness = 1 FOVCircle.Filled = false FOVCircle.Color = Color3.new(1,1,1)
+
+SilentGroup:AddToggle("SilentAim_Enabled", {Text = "Enable Silent Aim"})
+SilentGroup:AddToggle("FOV_Visible", {Text = "Show FOV Circle"})
+SilentGroup:AddSlider("FOV_Radius", {Text = "FOV Radius", Default = 100, Min = 20, Max = 500})
 
 RunService.RenderStepped:Connect(function()
-    if not Library.Toggles.ESP_Enabled.Value then for i=1, 32 do AllLines[i].Visible = false end return end
+    FOVCircle.Position = UserInputService:GetMouseLocation()
+    FOVCircle.Radius = Library.Options.FOV_Radius.Value
+    FOVCircle.Visible = Library.Toggles.FOV_Visible.Value
+    
+    for i=1, 128 do AllLines[i].Visible = false end
+    if not Library.Toggles.ESP_Enabled.Value then return end
+    
     for i, plr in pairs(Players:GetPlayers()) do
         if plr ~= LocalPlayer and plr.Character and plr.Character:FindFirstChild("HumanoidRootPart") then
             local pos, onScreen = Camera:WorldToViewportPoint(plr.Character.HumanoidRootPart.Position)
             if onScreen then
-                AllLines[i].From = Vector2.new(Camera.ViewportSize.X/2, Camera.ViewportSize.Y)
-                AllLines[i].To = Vector2.new(pos.X, pos.Y)
-                AllLines[i].Color = Library.Options.ESP_BoxColor.Value
-                AllLines[i].Visible = true
-            else AllLines[i].Visible = false end
-        else AllLines[i].Visible = false end
+                local scale = Camera:WorldToViewportPoint(plr.Character.HumanoidRootPart.Position + Vector3.new(0, 2.5, 0)).Y - Camera:WorldToViewportPoint(plr.Character.HumanoidRootPart.Position - Vector3.new(0, 2.5, 0)).Y
+                local w, h = scale * 0.6, scale
+                local x, y = pos.X, pos.Y
+                local l, r, t, b = x-w/2, x+w/2, y-h/2, y+h/2
+                local o = (i-1)*8
+                local lines = {{l,t,l+w/4,t}, {l,t,l,t+h/4}, {r,t,r-w/4,t}, {r,t,r,t+h/4}, {r,b,r-w/4,b}, {r,b,r,b-h/4}, {l,b,l+w/4,b}, {l,b,l,b-h/4}}
+                for j=1, 8 do AllLines[o+j].Color = Library.Options.ESP_BoxColor.Value; AllLines[o+j].From = Vector2.new(lines[j][1], lines[j][2]); AllLines[o+j].To = Vector2.new(lines[j][3], lines[j][4]); AllLines[o+j].Visible = true end
+            end
+        end
     end
 end)
 
-MainGroup:AddToggle("ESP_Enabled", {Text="Enable Tracers"})
-ESPTab:AddRightGroupbox("Options"):AddLabel("Tracer Color"):AddColorPicker("ESP_BoxColor", {Default=Color3.new(1,1,1)})
+MainGroup:AddToggle("ESP_Enabled", {Text="Enable Box ESP"})
+MainGroup:AddToggle("ESP_CornerBox", {Text="Corner Mode"})
+ESPTab:AddRightGroupbox("Options"):AddLabel("Box Color"):AddColorPicker("ESP_BoxColor", {Default=Color3.new(1,1,1)})
 
 --------------------------------------------------------------------------------
 -- COMBAT TAB
@@ -102,17 +97,19 @@ RunService.RenderStepped:Connect(function()
 end)
 
 --------------------------------------------------------------------------------
--- CONFIG & TELEPORT
+-- PLAYERS & CONFIG
 --------------------------------------------------------------------------------
-local ConfigFile = "mspaint_" .. LocalPlayer.Name .. ".json"
-local function SaveConfig() if writefile then local d={Toggles={},Options={}} for n,v in pairs(Library.Toggles) do d.Toggles[n]=v.Value end for n,v in pairs(Library.Options) do if typeof(v.Value)=="Color3" then d.Options[n]={v.Value.R,v.Value.G,v.Value.B} else d.Options[n]=v.Value end end writefile(ConfigFile, HttpService:JSONEncode(d)) end end
-local function LoadConfig() if readfile and isfile(ConfigFile) then local d = HttpService:JSONDecode(readfile(ConfigFile)) if d.Toggles then for n,v in pairs(d.Toggles) do if Library.Toggles[n] then Library.Toggles[n]:SetValue(v) end end end if d.Options then for n,v in pairs(d.Options) do if Library.Options[n] then if type(v)=="table" then Library.Options[n]:SetValueRGB(Color3.new(v[1],v[2],v[3])) else Library.Options[n]:SetValue(v) end end end end end end
+local PlayerTab = Window:AddTab("Players", "people")
+local PlayerGroup = PlayerTab:AddLeftGroupbox("Server List")
+PlayerGroup:AddButton({Text = "Reset Camera", Func = function() Camera.CameraSubject = LocalPlayer.Character.Humanoid end})
+for _, plr in pairs(Players:GetPlayers()) do
+    PlayerGroup:AddButton({Text = "Spectate " .. plr.Name, Func = function() if plr.Character and plr.Character:FindFirstChild("Humanoid") then Camera.CameraSubject = plr.Character.Humanoid end end})
+end
 
 local ConfigTab = Window:AddTab("Config", "file-text")
+local function SaveConfig() if writefile then local d={Toggles={},Options={}} for n,v in pairs(Library.Toggles) do d.Toggles[n]=v.Value end for n,v in pairs(Library.Options) do if typeof(v.Value)=="Color3" then d.Options[n]={v.Value.R,v.Value.G,v.Value.B} else d.Options[n]=v.Value end end writefile("mspaint_"..LocalPlayer.Name..".json", HttpService:JSONEncode(d)) end end
 ConfigTab:AddLeftGroupbox("Management"):AddButton({Text="Save Settings", Func=SaveConfig})
-ConfigTab:AddLeftGroupbox("Management"):AddButton({Text="Load Settings", Func=LoadConfig})
 
 local q = queue_on_teleport or queueonteleport or (syn and syn.queue_on_teleport)
 if q then q([[if not getgenv().MSPaintLoaded then loadstring(game:HttpGet("https://raw.githubusercontent.com/s8lkkkkk/dwja9dj-9aw80wd/refs/heads/main/sniper.lua"))() end]]) end
 LocalPlayer.OnTeleport:Connect(SaveConfig)
-task.delay(1, LoadConfig)
