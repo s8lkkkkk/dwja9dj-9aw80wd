@@ -369,9 +369,7 @@ local hitboxConn = RunService.RenderStepped:Connect(function()
                     local hrp = plr.Character and plr.Character:FindFirstChild("HumanoidRootPart")
                     if hrp then
                         hrp.Size = Vector3.new(hitboxSize, hitboxSize, hitboxSize)
-                        hrp.Transparency = 0.8
-                        hrp.BrickColor = BrickColor.new("White")
-                        hrp.Material = Enum.Material.Neon
+                        hrp.Transparency = 1
                         hrp.CanCollide = false
                     end
                 end)
