@@ -4,6 +4,7 @@ getgenv().MSPaintLoaded = true
 
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
+local UserInputService = game:GetService("UserInputService")
 local HttpService = game:GetService("HttpService")
 local Camera = workspace.CurrentCamera
 local LocalPlayer = Players.LocalPlayer
@@ -14,7 +15,7 @@ local Window = Library:CreateWindow({
 })
 
 --------------------------------------------------------------------------------
--- ESP TAB (Full Drawing Logic)
+-- ESP TAB (Full Logic)
 --------------------------------------------------------------------------------
 local ESPTab = Window:AddTab("ESP", "eye")
 local MainGroup = ESPTab:AddLeftGroupbox("Visuals")
@@ -36,7 +37,6 @@ local function takeSlot(plr) if LineSlots[plr] then return end local s = table.r
 local function giveSlot(plr) local s = LineSlots[plr] if s then LineSlots[plr] = nil table.insert(slotPool, s) local o = (s-1)*LINES_PER_PLAYER for j=1,LINES_PER_PLAYER do AllLines[o+j].Visible = false end end end
 local function onCharAdded(plr) giveSlot(plr) takeSlot(plr) end
 local function onPlayerAdded(plr) if plr == LocalPlayer then return end takeSlot(plr) if plr.Character then onCharAdded(plr) end plr.CharacterAdded:Connect(function() onCharAdded(plr) end) end
-
 for _, plr in pairs(Players:GetPlayers()) do onPlayerAdded(plr) end
 Players.PlayerAdded:Connect(onPlayerAdded) Players.PlayerRemoving:Connect(giveSlot)
 
@@ -107,8 +107,24 @@ end)
 -- CONFIG & TELEPORT
 --------------------------------------------------------------------------------
 local ConfigFile = "mspaint_" .. LocalPlayer.Name .. ".json"
-local function SaveConfig() if writefile then local d = {Toggles={}, Options={}} for n,v in pairs(Library.Toggles) do d.Toggles[n]=v.Value end for n,v in pairs(Library.Options) do d.Options[n]=v.Value end writefile(ConfigFile, HttpService:JSONEncode(d)) end end
-local function LoadConfig() if readfile and isfile(ConfigFile) then local d = HttpService:JSONDecode(readfile(ConfigFile)) if d.Toggles then for n,v in pairs(d.Toggles) do if Library.Toggles[n] then Library.Toggles[n]:SetValue(v) end end end end end
+local function SaveConfig() 
+    if not writefile then return end
+    local d = {Toggles={}, Options={}} 
+    for n,v in pairs(Library.Toggles) do d.Toggles[n]=v.Value end 
+    for n,v in pairs(Library.Options) do 
+        if typeof(v.Value) == "Color3" then d.Options[n]={v.Value.R, v.Value.G, v.Value.B} else d.Options[n]=v.Value end
+    end 
+    writefile(ConfigFile, HttpService:JSONEncode(d)) 
+end
+
+local function LoadConfig() 
+    if not (readfile and isfile and isfile(ConfigFile)) then return end 
+    local d = HttpService:JSONDecode(readfile(ConfigFile)) 
+    if d.Toggles then for n,v in pairs(d.Toggles) do if Library.Toggles[n] then Library.Toggles[n]:SetValue(v) end end end
+    if d.Options then for n,v in pairs(d.Options) do if Library.Options[n] then 
+        if type(v) == "table" then Library.Options[n]:SetValueRGB(Color3.new(v[1], v[2], v[3])) else Library.Options[n]:SetValue(v) end 
+    end end end
+end
 
 local ConfigTab = Window:AddTab("Config", "file-text")
 ConfigTab:AddLeftGroupbox("Management"):AddButton({Text="Save Settings", Func=SaveConfig})
