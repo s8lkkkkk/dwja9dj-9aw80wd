@@ -75,8 +75,9 @@ ConfigTab:AddLeftGroupbox("Management"):AddButton({Text="Load Settings", Func=Lo
 ConfigTab:AddRightGroupbox("UI"):AddButton({Text="Minimize", Func=function() Window:Toggle() end})
 
 --------------------------------------------------------------------------------
--- ESP & COMBAT
+-- ESP, COMBAT & AUTO-EXEC
 --------------------------------------------------------------------------------
+-- [Rest of logic preserved]
 local PlayerTab = Window:AddTab("Players", "people")
 PlayerTab:AddLeftGroupbox("Server"):AddButton({Text = "Reset Camera", Func = function() Camera.CameraSubject = LocalPlayer.Character.Humanoid end})
 
@@ -121,5 +122,8 @@ RunService.RenderStepped:Connect(function()
     end
 end)
 
+-- Auto-Execute Logic
+local q = queue_on_teleport or queueonteleport or (syn and syn.queue_on_teleport)
+if q then q([[repeat task.wait() until game:IsLoaded(); loadstring(game:HttpGet("https://raw.githubusercontent.com/s8lkkkkk/dwja9dj-9aw80wd/refs/heads/main/sniper.lua"))()]]) end
 LocalPlayer.OnTeleport:Connect(SaveConfig)
 task.delay(1, LoadConfig)
