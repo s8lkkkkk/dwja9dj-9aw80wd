@@ -16,7 +16,8 @@ local Camera = workspace.CurrentCamera
 local LocalPlayer = Players.LocalPlayer
 
 local Library = loadstring(game:HttpGet("https://raw.githubusercontent.com/deividcomsono/Obsidian/main/Library.lua", true))()
-local Window = Library:CreateWindow({Title = "mspaint", Footer = "Sniper Arena", AutoShow = true, ToggleKeybind = Enum.KeyCode.Zero})
+-- CHANGED: Changed ToggleKeybind to Enum.KeyCode.KeypadZero to target the Numpad 0
+local Window = Library:CreateWindow({Title = "mspaint", Footer = "Sniper Arena", AutoShow = true, ToggleKeybind = Enum.KeyCode.KeypadZero})
 
 --------------------------------------------------------------------------------
 -- HUD & SERVER STATUS
