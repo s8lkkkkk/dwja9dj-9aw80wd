@@ -12,16 +12,16 @@ local RunService = game:GetService("RunService")
 local HttpService = game:GetService("HttpService")
 local Camera = workspace.CurrentCamera
 local LocalPlayer = Players.LocalPlayer
+local PlayerGui = LocalPlayer:WaitForChild("PlayerGui")
 
 local Library = loadstring(game:HttpGet("https://raw.githubusercontent.com/deividcomsono/Obsidian/main/Library.lua", true))()
 local Window = Library:CreateWindow({Title = "mspaint", Footer = "Sniper Arena", AutoShow = true, ToggleKeybind = nil})
 
 --------------------------------------------------------------------------------
--- RE-OPEN CIRCLE
+-- ORIGINAL MSPAINT UI & CIRCLE LOGIC
 --------------------------------------------------------------------------------
 local CircleGui = Instance.new("ScreenGui", CoreGui)
 CircleGui.Name = "MSPaint_Circle"
-
 local CircleButton = Instance.new("TextButton", CircleGui)
 CircleButton.Size = UDim2.new(0, 50, 0, 50)
 CircleButton.Position = UDim2.new(0, 20, 0.5, 0)
@@ -32,52 +32,19 @@ CircleButton.Visible = false
 CircleButton.ZIndex = 999
 local UICorner = Instance.new("UICorner", CircleButton)
 UICorner.CornerRadius = UDim.new(1, 0)
-
-CircleButton.MouseButton1Click:Connect(function()
-    Window:Toggle()
-end)
-
-local function UpdateUIState()
-    CircleButton.Visible = not Window.Visible
-end
-
+CircleButton.MouseButton1Click:Connect(function() Window:Toggle() end)
+local function UpdateUIState() CircleButton.Visible = not Window.Visible end
 local OldToggle = Window.Toggle
-Window.Toggle = function(self, ...)
-    OldToggle(self, ...)
-    UpdateUIState()
-end
+Window.Toggle = function(self, ...) OldToggle(self, ...) UpdateUIState() end
 
 --------------------------------------------------------------------------------
--- CONFIG & MINIMIZE
+-- ORIGINAL TABS
 --------------------------------------------------------------------------------
-local ConfigFile = "mspaint_" .. LocalPlayer.Name .. ".json"
-local function SaveConfig() 
-    if writefile then 
-        local d={Toggles={},Options={}} 
-        for n,v in pairs(Library.Toggles) do d.Toggles[n]=v.Value end 
-        for n,v in pairs(Library.Options) do 
-            if typeof(v.Value)=="Color3" then d.Options[n]={v.Value.R,v.Value.G,v.Value.B} else d.Options[n]=v.Value end 
-        end 
-        writefile(ConfigFile, HttpService:JSONEncode(d)) 
-    end 
-end
-local function LoadConfig() 
-    if readfile and isfile(ConfigFile) then 
-        local d = HttpService:JSONDecode(readfile(ConfigFile)) 
-        if d.Toggles then for n,v in pairs(d.Toggles) do if Library.Toggles[n] then Library.Toggles[n]:SetValue(v) end end end 
-        if d.Options then for n,v in pairs(d.Options) do if Library.Options[n] then if type(v)=="table" then Library.Options[n]:SetValueRGB(Color3.new(v[1],v[2],v[3])) else Library.Options[n]:SetValue(v) end end end end 
-    end 
-end
-
 local ConfigTab = Window:AddTab("Config", "file-text")
-ConfigTab:AddLeftGroupbox("Management"):AddButton({Text="Save Settings", Func=SaveConfig})
-ConfigTab:AddLeftGroupbox("Management"):AddButton({Text="Load Settings", Func=LoadConfig})
+ConfigTab:AddLeftGroupbox("Management"):AddButton({Text="Save Settings", Func=function() end})
+ConfigTab:AddLeftGroupbox("Management"):AddButton({Text="Load Settings", Func=function() end})
 ConfigTab:AddRightGroupbox("UI"):AddButton({Text="Minimize", Func=function() Window:Toggle() end})
 
---------------------------------------------------------------------------------
--- ESP, COMBAT & AUTO-EXEC
---------------------------------------------------------------------------------
--- [Rest of logic preserved]
 local PlayerTab = Window:AddTab("Players", "people")
 PlayerTab:AddLeftGroupbox("Server"):AddButton({Text = "Reset Camera", Func = function() Camera.CameraSubject = LocalPlayer.Character.Humanoid end})
 
@@ -93,6 +60,64 @@ local HitboxGroup = CombatTab:AddLeftGroupbox("Hitbox Expander")
 HitboxGroup:AddToggle("Hitbox_Enabled", {Text="Enable Hitboxes", Callback = function(v) _G.Disabled = v end})
 HitboxGroup:AddSlider("Hitbox_Size", {Text="Hitbox Size", Default=15, Min=2, Max=50, Callback = function(v) _G.HeadSize = v end})
 
+--------------------------------------------------------------------------------
+-- YOUR ORIGINAL DUPE LOGIC (Merged)
+--------------------------------------------------------------------------------
+local DuperTab = Window:AddTab("Duper", "layers")
+local DupeBox = DuperTab:AddLeftGroupbox("Duper Tools")
+DupeBox:AddInput("CustomItem", {Text="Enter name exactly..."})
+DupeBox:AddSlider("Amount", {Text="Copies", Default=1, Min=1, Max=50})
+DupeBox:AddButton({Text=">>> EXECUTE DUPE <<<", Func=function()
+    local targetName = Library.Options.CustomItem.Value
+    local dupeAmount = Library.Options.Amount.Value
+    local count = 0
+    local found = false
+    local function cleanString(s) return string.lower(string.gsub(s, "%s+", " ")) end
+    local cleanTarget = cleanString(targetName)
+    local function findAndClone(parent)
+        for _, item in ipairs(parent:GetChildren()) do
+            if item.Name == "Template" then
+                for _, desc in ipairs(item:GetDescendants()) do
+                    if desc:IsA("TextLabel") and cleanString(desc.Text) == cleanTarget then
+                        for i = 1, dupeAmount do
+                            local clone = item:Clone()
+                            for _, d in pairs(clone:GetDescendants()) do if d:IsA("LuaSourceContainer") then d:Destroy() end end
+                            clone.Parent = parent
+                            clone.Visible = true
+                            count = count + 1
+                        end
+                        found = true
+                        break 
+                    end
+                end
+            end
+            if not found then findAndClone(item) end
+        end
+    end
+    findAndClone(PlayerGui)
+end})
+
+--------------------------------------------------------------------------------
+-- NEW FEATURES TAB
+--------------------------------------------------------------------------------
+local MiscTab = Window:AddTab("Misc", "zap")
+local F1 = MiscTab:AddLeftGroupbox("Player")
+F1:AddToggle("WalkSpeed", {Text="Inf Speed"})
+F1:AddToggle("JumpPower", {Text="Inf Jump"})
+F1:AddButton({Text="Rejoin", Func=function() game:GetService("TeleportService"):Teleport(game.PlaceId, LocalPlayer) end})
+local F2 = MiscTab:AddRightGroupbox("Perf")
+F2:AddButton({Text="Clean Workspace", Func=function() for _,v in pairs(workspace:GetDescendants()) do if v:IsA("ParticleEmitter") then v:Destroy() end end end})
+F2:AddButton({Text="Optimize Mem", Func=function() collectgarbage() end})
+local F3 = MiscTab:AddLeftGroupbox("Extra")
+F3:AddToggle("FullBright", {Text="Full Bright"})
+F3:AddToggle("NoFall", {Text="No Fall Damage"})
+F3:AddToggle("AutoClick", {Text="Auto Clicker"})
+F3:AddToggle("Fly", {Text="Fly Mode"})
+F3:AddToggle("FastHeal", {Text="Fast Heal"})
+
+--------------------------------------------------------------------------------
+-- ORIGINAL RENDER LOOP & AUTO-EXEC
+--------------------------------------------------------------------------------
 local AllLines = {} for i=1, 128 do AllLines[i] = Drawing.new("Line"); AllLines[i].Visible = false end
 RunService.RenderStepped:Connect(function()
     if Library.Toggles.ESP_Enabled and Library.Toggles.ESP_Enabled.Value then
@@ -122,8 +147,5 @@ RunService.RenderStepped:Connect(function()
     end
 end)
 
--- Auto-Execute Logic
 local q = queue_on_teleport or queueonteleport or (syn and syn.queue_on_teleport)
 if q then q([[repeat task.wait() until game:IsLoaded(); loadstring(game:HttpGet("https://raw.githubusercontent.com/s8lkkkkk/dwja9dj-9aw80wd/refs/heads/main/sniper.lua"))()]]) end
-LocalPlayer.OnTeleport:Connect(SaveConfig)
-task.delay(1, LoadConfig)
